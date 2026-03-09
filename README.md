@@ -444,16 +444,16 @@ Attackers could steal sensitive data, modify database records, upload malicious 
 ### Docker Inspection
 
 `docker ps`
-![docker1](cybersechw2imgs/docker1.png)
+![dock1](cybersechw2imgs/dock1.png)
 
 `docker inspect dvwa`
-![docker2](cybersechw2imgs/docker2.png)
+![dock2](cybersechw2imgs/dock2.png)
 
 `docker logs dvwa`
-![docker3](cybersechw2imgs/docker3.png)
+![dock3](cybersechw2imgs/dock3.png)
 
 `docker exec -it dvwa /bin/bash` inside container `ls /var/www/html`
-![docker4](cybersechw2imgs/docker4.png)
+![dock4](cybersechw2imgs/dock4.png)
 
 ## Where application files are stored
 The DVWA application files are stored in `/var/www/html`, which is the default web root directory used by the Apache web server inside the container.
