@@ -442,12 +442,16 @@ Alert popup appears.
 
 ---
 
-## CSP (Content Security Policy)
+## CSP
 
 ### LOW
 **Payload Used:**  
-Upload `csp.js` using File Upload. Then use the payload:  
-`/../hackable/uploads/csp.js`
+Upload `testcsp.js` using File Upload, which has the code:
+```
+alert(1);
+```
+Then use the payload:  
+`/../hackable/uploads/testcsp.js`
 
 **Result:**  
 The alert message was displayed.  
