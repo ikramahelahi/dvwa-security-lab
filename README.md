@@ -459,7 +459,7 @@ Attackers could steal sensitive data, modify database records, upload malicious 
 The DVWA application files are stored in `/var/www/html`, which is the default web root directory used by the Apache web server inside the container.
 
 ## What backend technology DVWA uses
-DVWA uses **PHP** as the server-side programming language, **MySQL/MariaDB** as the database, and **Apache** as the web server. Together, this forms a **LAMP stack (Linux, Apache, MySQL, PHP)**.
+DVWA uses **PHP** as the server-side programming language, **MySQL/MariaDB** as the database, and **Apache** as the web server.
 
 ## How Docker isolates the environment
 Docker isolates applications using containers that separate processes, filesystems, networking, and dependencies from the host system. This allows the DVWA application to run in its own controlled environment without affecting the host machine.
