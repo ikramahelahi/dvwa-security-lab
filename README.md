@@ -441,7 +441,7 @@ Attackers could steal sensitive data, modify database records, upload malicious 
 
 ---
 
-### Docker Inspection
+# Docker Inspection
 
 `docker ps`
 ![dock1](cybersechw2imgs/dock1.png)
