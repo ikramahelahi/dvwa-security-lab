@@ -224,6 +224,21 @@ Higher security checks the actual file contents.
 
 ---
 
+### HIGH
+**Payload Used:**  
+We modified the PHP file to include image magic bytes so the server treats it as a JPG image.
+![fileup3a](cybersechw2imgs/fileup3a.png)  
+
+**Result:**  
+File successfully uploaded and executed.  
+![fileup3b](cybersechw2imgs/fileup3b.png)
+
+**Why it worked:**  
+The server trusted the file type in the request header.
+
+**Why it failed at higher level:**  
+Higher security checks the actual file contents.
+
 ## SQL Injection
 
 ### LOW
@@ -426,6 +441,81 @@ Alert popup appears.
 ![xssstor3](cybersechw2imgs/xssstor3.png)
 
 ---
+
+## CSP (Content Security Policy)
+
+### LOW
+**Payload Used:**  
+Upload `csp.js` using File Upload. Then use the payload:  
+`/../hackable/uploads/csp.js`
+
+**Result:**  
+The alert message was displayed.  
+![csp1](cybersechw2imgs/csp1.png)
+
+**Why it worked:**  
+The website itself was whitelisted for script execution, so the uploaded script was allowed to run.
+
+**Why it failed at higher level:**  
+At higher security levels, script tags are removed or restricted, preventing the uploaded script from executing.
+
+---
+
+### MEDIUM
+**Payload Used:**  
+`<script nonce="TmV2ZXIgZ29pbmcgdG8gZ2l2ZSB5b3UgdXA=">alert(1)</script>`
+
+**Result:**  
+Alert message displayed.  
+![csp1](cybersechw2imgs/csp1.png)
+
+**Why it worked:**  
+The nonce value was visible to the user, so it could be reused in the injected script.
+
+**Why it failed at higher level:**  
+At higher security levels, there are no nonce exceptions allowed in the Content Security Policy.
+
+---
+
+## JavaScript
+
+### LOW
+**Payload Used:**  
+Modify the phrase to `success`, then run the following in the browser console:
+
+`generate_token()`
+
+After that, submit the request.
+
+**Result:**  
+Success message displayed.  
+![js1](cybersechw2imgs/js1.png)
+
+**Why it worked:**  
+Running `generate_token()` updated the token value so it matched the value expected by the backend.
+
+**Why it failed at higher level:**  
+At higher security levels, the function names are less clear, making them harder to identify and use.
+
+---
+
+### MEDIUM
+**Payload Used:**  
+Modify the phrase to `success`, then run the following in the console:
+
+`do_elsesomething("XX")`
+
+Then submit the request.
+
+**Result:**  
+Success message displayed.  
+![js2](cybersechw2imgs/js2.png)
+
+**Why it worked:**  
+Another function in the code was able to modify the token value, allowing the request to pass validation.
+
+**Why it failed at higher level:**  
+At higher security levels, the code is obfuscated, making it difficult to read and identify useful functions.
 
 # Security Analysis
 
